@@ -304,9 +304,11 @@ function PushPull() {
 		}
 		approve_items(all_items,function(approved_items,tmp8) {
 			if (tmp8.success) {
-				apply_changes(approved_items,function(tmp2) {
-					if (callback_handle_differences) callback_handle_differences(tmp2);
-				});
+				if (approved_items.length>0) {
+					apply_changes(approved_items,function(tmp2) {
+						if (callback_handle_differences) callback_handle_differences(tmp2);
+					});
+				}
 			}
 			else {
 				if (callback_handle_differences) callback_handle_differences({success:false,error:tmp8.error});
