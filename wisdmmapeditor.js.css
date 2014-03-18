@@ -1,0 +1,40 @@
+.wisdmmapeditor .buttons {
+	position:absolute;
+	right:0px;
+	top:0px;
+	height:20px;
+}
+.wisdmmapeditor button {
+	font-size:14px;
+	height:19px;
+}
+.wisdmmapeditor .title {
+	font-family:Arial;
+	font-size:14px;
+}
+.wisdmmapeditor_editor {
+	border:none !important;
+}
+
+.wisdmmapeditor .toolbutton {
+	background-size:100% auto;
+	width:20px;
+	height:20px;
+	position:relative;
+	float:left;
+}
+
+.wisdmmapeditor .toolbutton:hover {
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=40)";
+  filter: alpha(opacity=40);
+  -moz-opacity: 0.4;
+  -khtml-opacity: 0.4;
+  opacity: 0.4;
+}
+.wisdmmapeditor .toolbutton:active {
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+  filter: alpha(opacity=80);
+  -moz-opacity: 0.8;
+  -khtml-opacity: 0.8;
+  opacity: 0.8;
+}

@@ -1,0 +1,25 @@
+.ideaInput {
+	position: absolute;
+	border: none;
+	z-index: 999;
+	background-color: transparent;
+	color: #F8F8F8;
+	font-family: "Helvetica";
+	font-weight: bold;
+	font-size: 13;
+	text-align: center;
+	resize: none;
+}
+.ideaInput:focus {
+	outline: none;
+}
+#linkEditWidget {
+	background-color: yellow;
+	z-index: 999;
+	display:none;
+	position: absolute;
+}
+.active {
+	background-color: green;
+	color: white;
+}

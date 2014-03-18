@@ -1,0 +1,19 @@
+.actiontoolbar .action_item .item_icon {
+	background-size:100% auto;
+}
+.actiontoolbar .action_item .item_label {
+	font-size:11px;
+}
+
+.actiontoolbar .action_item:hover {
+	background-color:rgb(80,80,80);
+	color:white;
+}
+.actiontoolbar .action_item:active {
+	background-color:rgb(150,150,150);
+	color:white;
+}
+.actiontoolbar .warning {
+	color:blue;
+}
+

@@ -1,0 +1,14 @@
+.approveitemswidget table td {
+	text-align:left;
+	font-size:11px;
+}
+.approveitemswidget table th {
+	text-align:left;
+	font-size:11px;
+}
+.approveitemswidget .warning {
+	color:darkblue;
+}
+.approveitemswidget .message {
+	color:darkgreen;
+}
