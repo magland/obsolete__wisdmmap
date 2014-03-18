@@ -143,9 +143,11 @@ function MapJSWidget() {
 				var tmp=convert_node(children[i]);
 				ret.ideas[tmp.id]=tmp;
 			}
+			if (!ret.attr) ret.attr={};
 			ret.attr.jfm_is_leaf=false;
 		}
 		else {
+			if (!ret.attr) ret.attr={};
 			ret.attr.jfm_is_leaf=true;
 		}
 		
@@ -193,6 +195,8 @@ function MapJSWidget() {
 		}
 	}
 	function _getNodeData(node_id) {
+		if (!m_idea.findParent) return {};
+		
 		var idea=get_idea_from_id(node_id);
 		if (!idea) return null;
 		var node=deconvert_node(idea,false);

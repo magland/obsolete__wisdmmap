@@ -243,19 +243,18 @@ function WisdmMapWidget() {
 	function load_stored_map() {
 		set_status('Loading stored map...',0,function() {
 			
+			var map;
 			try {
 				var tmp=localStorage.wisdmmap_last_map||'';
-				var map=JSON.parse(tmp);
+				map=JSON.parse(tmp);
 				m_mapjs_widget.setMap(map);
 				set_status('Map loaded from browser storage.',3000);
-				set_last_clean_hash();
 			}
 			catch(err) {
-				W1.setMap({root:{title:'New Map'}});
-				console.error(err);
-				set_status('Error loading stored map.',3000);
-			}	
-			
+				map={root:{title:'New Map'}};
+				m_mapjs_widget.setMap(map);
+				set_status('Initialized new map.',3000);
+			}
 		});
 		
 	}
@@ -971,6 +970,7 @@ function WisdmMapWidget() {
 		}
 	}
 	
+	var m_update_default_status_scheduled=false;
 	function update_default_status() {
 		if (Wisdm.sessionNode) {
 			if (Wisdm.currentUser) {
@@ -983,8 +983,17 @@ function WisdmMapWidget() {
 		else {
 			set_default_status('Ready.');
 		}
+
+		var data0=m_mapjs_widget.getNodeData(m_mapjs_widget.getRootNodeId());
+		if (data0) document.title=data0.title;
 		
-		setTimeout(update_default_status,2000);
+		if (!m_update_default_status_scheduled) {
+			m_update_default_status_scheduled=true;
+			setTimeout(function () {
+				m_update_default_status_scheduled=false;
+				update_default_status();
+			},2000);
+		}
 	}
 	
 	function set_default_status(txt) {
