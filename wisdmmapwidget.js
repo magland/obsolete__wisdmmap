@@ -209,6 +209,11 @@ function WisdmMapWidget() {
 			localStorage.wisdmmap_last_map=JSON.stringify(map);
 			set_status('Map saved to browser storage.',3000);
 			set_last_clean_hash();
+			var url=location.href;
+			var ind=url.indexOf('?'); if (ind<0) ind=url.indexOf('#');
+			if (ind>=0) url=url.slice(0,ind);
+			url+='#';
+			location.href=url;
 		});
 	}
 	function on_save_map_cloud() {
@@ -223,9 +228,9 @@ function WisdmMapWidget() {
 				set_status('File saved to temporary cloud.',4000);
 				if (key_name!=m_temporary_cloud_file_name) {
 					var url=location.href;
-					var ind=url.indexOf('?');
+					var ind=url.indexOf('?'); if (ind<0) ind=url.indexOf('#');
 					if (ind>=0) url=url.slice(0,ind);
-					url+='?tc='+key_name;
+					url+='#tc='+key_name;
 					location.href=url;
 				}
 			}
@@ -544,6 +549,9 @@ function WisdmMapWidget() {
 				style.background='#EEBBBB';
 				style.fontSize=5;
 			}
+			else if (data.is_leaf) {
+				style.background='#EEEEEE';
+			}
 			else {
 				style.background='#DDEEEE';
 			}
@@ -852,25 +860,40 @@ function WisdmMapWidget() {
 		},100);
 	}
 	
+	function go_to_node(node_id) {
+		console.log('go_to_node: '+node_id);
+		set_view_mode('map');
+		m_mapjs_widget.setSelectedNode(node_id);
+	}
+	
 	function on_search() {
 		jPrompt('Search map for text:','','Search for text',function(str) {
 			if (!str) return;
-			var map=m_mapjs_widget.getMap();
+			var map=m_mapjs_widget.getMap(null,{include_node_ids:true});
 			set_view_mode('output');
 			m_output_window.clearContent();
-			m_output_window.appendContent($('<p>Searching for text: <pre>"'+str+'"</pre> ...</p>'));
+			m_output_window.appendContent($('<p>Searching for text: "'+f22(str)+'" ...</p>'));
 			set_status('Searching...');
 			setTimeout(function() {
 				var results=[];
 				do_search({node:map.root||{},text:str,timer:new Date(),results:results},function() {
 					set_status('Found '+results.length+' items containing '+str);
 					var table0=$('<table></table>');
+					table0.append('<tr><th>File</th><th>Path</th><th>Text</th></tr>');
 					for (var i=0; i<results.length; i++) {
 						var tr0=$('<tr></tr>');
-						tr0.append('<td>'+results[i].file_name+'</td>');
+						tr0.append('<td><a data-command=go_to_node>'+results[i].file_name+'</a></td>');
 						tr0.append('<td>'+results[i].path+'</td>');
-						tr0.append('<td>'+f22(truncate_string(results[i].context||'',120))+'</td>');						
+						tr0.append('<td><a data-command=edit_node>'+f22(truncate_string(results[i].context||'',120))+'</a></td>');						
 						table0.append(tr0);
+						tr0.find('a').attr('href','javascript:;');
+						tr0.find('a').attr('data-node-id',results[i].node_id);
+						tr0.find('a').click(function() {
+							if ($(this).attr('data-command')=='go_to_node')
+								go_to_node($(this).attr('data-node-id'));
+							else if ($(this).attr('data-command')=='edit_node')
+								on_edit_attachment($(this).attr('data-node-id'));
+						});
 					}
 					m_output_window.clearContent();
 					m_output_window.appendContent(table0);
@@ -892,6 +915,7 @@ function WisdmMapWidget() {
 			if (str.length<=maxlen) return str;
 			else return str.slice(0,maxlen-3)+'...';
 		}
+		var MAX_NUM_RESULTS=100;
 		function do_search(params,callback) {
 			if (params.results.length>=MAX_NUM_RESULTS) {
 				callback();
@@ -908,7 +932,7 @@ function WisdmMapWidget() {
 			while (!done) {
 				ind=att0.indexOf(text,ind+1);
 				if (ind>=0) {
-					results.push({file_name:title,path:path,context:get_context_line(att0,ind)});
+					results.push({file_name:title,path:path,context:get_context_line(att0,ind),node_id:node.id||''});
 				}
 				if (results.length>=MAX_NUM_RESULTS) {
 					callback();

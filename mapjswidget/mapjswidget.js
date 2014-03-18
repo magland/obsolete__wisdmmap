@@ -36,7 +36,7 @@ function MapJSWidget() {
 	this.setSize=function(W,H) {m_width=W; m_height=H; update_layout();};
 	this.initialize=function() {return _initialize();};
 	this.setMap=function(map) {return _setMap(map);};
-	this.getMap=function(node_id) {return _getMap(node_id);};
+	this.getMap=function(node_id,params) {return _getMap(node_id,params);};
 	this.setInputEnabled=function(val) {m_input_enabled=val; m_map_model.setInputEnabled(val);};
 	this.onOpenAttachment=function(callback) {m_attachment_callback=callback;};
 	this.getNodeData=function(node_id) {return _getNodeData(node_id);};
@@ -48,6 +48,7 @@ function MapJSWidget() {
 	this.setStyleFunction=function(func) {m_style_function=func;};
 	this.testfunc=function(params) {return _testfunc(params);};
 	this.getSelectedNodeId=function() {return _getSelectedNodeId();};
+	this.setSelectedNode=function(node_id) {return _setSelectedNode(node_id);};
 	this.onKeyPressed=function(callback) {m_div.bind('on-key-pressed',function(evt,obj) {callback(obj);});};
 	this.refreshMap=function() {that.setMap(that.getMap());};
 	this.onContextMenuRequested=function(callback) {m_div.bind('on-context-menu-requested',function(evt,obj) {callback(obj);});};	
@@ -114,15 +115,15 @@ function MapJSWidget() {
 	}
 	function convert_node(node) {
 		var ret={};
+		var children=node.children||[];
 		ret.title=node.title||'';
 		ret.attributes=$.extend({},(node.attributes||{}));
 		ret.attr={};
 		if (node.attachment) ret.attr.attachment=$.extend({},node.attachment);
-		if (node.collapsed) ret.attr.collapsed=true;
+		if ((node.collapsed)&&(children.length>0)) ret.attr.collapsed=true;
 		ret.attr.style={};
 		ret.id=get_next_id(node.negative||false);
-		ret.ideas={};
-		var children=node.children||[];
+		
 		
 		/*
 		var max_items_to_display=8;
@@ -135,16 +136,23 @@ function MapJSWidget() {
 			ret.holder_id=tmp1.id;
 		}
 		*/
-		var holder=ret;
-		//if (ret.ideas_are_hidden) holder=ret.ideas[ret.holder_id];
-		for (var i=0; i<children.length; i++) {
-			var tmp=convert_node(children[i]);
-			holder.ideas[tmp.id]=tmp;
+		
+		if (children.length>0) {
+			ret.ideas={};
+			for (var i=0; i<children.length; i++) {
+				var tmp=convert_node(children[i]);
+				ret.ideas[tmp.id]=tmp;
+			}
+			ret.attr.jfm_is_leaf=false;
+		}
+		else {
+			ret.attr.jfm_is_leaf=true;
 		}
 		
 		return ret;
 	}
-	function deconvert_node(idea,recursive) {
+	function deconvert_node(idea,recursive,params) {
+		if (!params) params={};
 		var node={};
 		node.title=idea.title||'';
 		node.attributes=$.extend({},(idea.attributes||{}));
@@ -152,6 +160,9 @@ function MapJSWidget() {
 		if ((idea.attr)&&(idea.attr.attachment)) node.attachment=$.extend({},idea.attr.attachment);
 		if ((idea.attr)&&(idea.attr.collapsed)) node.collapsed=true;
 		var ideas=idea.ideas||{};
+		
+		if (params.include_node_ids) node.id=idea.id;
+		
 		/*
 		if ((idea.ideas_are_hidden)&&(idea.holder_id)) {
 			ideas=idea.ideas[idea.holder_id].ideas||{};
@@ -165,7 +176,7 @@ function MapJSWidget() {
 		if (recursive) {
 			for (var idea_key in ideas) {
 				var is_negative=(Number(idea_key)<0);
-				var node2=deconvert_node(ideas[idea_key],recursive);
+				var node2=deconvert_node(ideas[idea_key],recursive,params);
 				if (is_negative) node2.negative=true;
 				node.children.push(node2);
 			}
@@ -206,6 +217,16 @@ function MapJSWidget() {
 		var selected_idea=get_idea_from_id(idea_id);
 		if (selected_idea) return selected_idea;
 		else return null;
+	}
+	function _setSelectedNode(node_id) {
+		console.log('setSelectedNode: '+node_id);
+		var tmp=node_id;
+		while (tmp) {
+			m_idea.updateAttr(tmp,'collapsed',false);
+			tmp=(m_idea.findParent(tmp)||{}).id||null;
+		}
+		m_map_model.selectNode(node_id);
+		console.log('done setSelectedNode');
 	}
 	
 	function do_copy() {
@@ -295,7 +316,8 @@ function MapJSWidget() {
 		
 		m_map_model.setIdea(m_idea);
 	}
-	function _getMap(node_id) {
+	function _getMap(node_id,params) {
+		if (!params) params={};
 		var tmp=m_map_model.getIdea(); 
 		if (!tmp) return null;
 		var tmp2=tmp;
@@ -304,7 +326,7 @@ function MapJSWidget() {
 			if (!tmp2) return null;
 		}
 		var tmp3=tmp.clone(tmp2.id);
-		var root=deconvert_node(tmp3,true);
+		var root=deconvert_node(tmp3,true,params);
 		return {root:root};
 	}
 	
@@ -337,7 +359,8 @@ function MapJSWidget() {
 		var data={
 			title:idea.title||'',
 			attachment:idea.attachment||{},
-			is_root:is_root
+			is_root:is_root,
+			is_leaf:_.isEmpty(idea.ideas||{})
 		};
 		
 		if (m_style_function) {
