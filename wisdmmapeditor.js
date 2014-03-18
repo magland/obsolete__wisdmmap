@@ -5,7 +5,7 @@ function WisdmMapEditor() {
 	
 	this.div=function() {return m_div;};
 	this.setSize=function(W,H) {m_width=W; m_height=H; update_layout();};
-	this.setText=function(text) {m_editor.setText(text);};
+	this.setText=function(text) {m_editor.setText(text); m_last_set_text=text;};
 	this.getText=function() {return m_editor.getText();};
 	this.onSave=function(callback) {m_div.bind('on-save',function(evt) {callback();});};
 	this.setTitle=function(title) {m_title=title; update_layout();};
@@ -23,8 +23,10 @@ function WisdmMapEditor() {
 	var m_language='';
 	var m_editor=null;
 	var m_edit_mode=false;
+	var m_last_set_text='';
 	m_div.find('#edit').click(on_edit);
 	m_div.find('#save').click(on_save);
+	m_div.find('#cancel').click(on_cancel);
 	m_div.find('#expand_button').click(function() {m_div.trigger('on-expand');});
 	m_div.find('#collapse_button').click(function() {m_div.trigger('on-collapse');});
 	
@@ -92,9 +94,6 @@ function WisdmMapEditor() {
 			m_editor.setReadOnly(true);
 		}
 	}
-	function on_cancel() {
-		//to do: finish this
-	}
 	function on_edit() {
 		m_edit_mode=true;
 		update_layout();
@@ -104,6 +103,11 @@ function WisdmMapEditor() {
 		m_edit_mode=false;
 		update_layout();
 	}	
+	function on_cancel() {
+		that.setText(m_last_set_text);
+		m_edit_mode=false;
+		update_layout();
+	}
 	function _setExtraButtons(extra_buttons) {
 		var XX=m_div.find('#extra_buttons');
 		XX.empty();

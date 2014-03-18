@@ -33,7 +33,7 @@ function MapJSWidget() {
 	var that=this;
 	
 	this.div=function() {return m_div;};
-	this.setSize=function(W,H) {m_width=W; m_height=H; update_layout();};
+	this.setSize=function(W,H) {_setSize(W,H);};
 	this.initialize=function() {return _initialize();};
 	this.setMap=function(map) {return _setMap(map);};
 	this.getMap=function(node_id,params) {return _getMap(node_id,params);};
@@ -62,6 +62,7 @@ function MapJSWidget() {
 	var m_input_enabled=true;
 	var m_attachment_callback=function(node_id) {console.log ('attachment callback not defined',node_id);};
 	var m_style_function=null;
+	var m_width=0,m_height=0;
 	
 	//initialize the map model
 	var isTouch=false; //I am guessing this would be true on a touch screen?
@@ -101,6 +102,30 @@ function MapJSWidget() {
 		m_div.mapWidget(console,m_map_model,isTouch,imageInsertController);
 		
 		//jQuery('body').attachmentEditorWidget(m_map_model);
+	}
+	
+	function _setSize(W,H) {
+		if ((W==m_width)&&(H==m_height)) return;
+		
+		m_width=W;
+		m_height=H;
+		update_layout();
+		schedule_resize_trigger();
+	}
+	
+	var m_resize_trigger_scheduled=false;
+	function schedule_resize_trigger() {
+		if (m_resize_trigger_scheduled) return;
+		m_resize_trigger_scheduled=true;
+		setTimeout(do_resize_trigger,200);
+		function do_resize_trigger() {
+			m_resize_trigger_scheduled=false;
+			if (m_map_model) {
+				//console.log('dispatching: mapViewResetRequested');
+				//m_map_model.dispatchEvent('mapViewResetRequested');
+				$(window).resize(); //this seems to be the only way to notify MAPJS!
+			}
+		}
 	}
 	
 	function get_next_id(negative) {
@@ -336,18 +361,6 @@ function MapJSWidget() {
 	
 	function update_layout() {
 		m_div.css({position:'absolute',width:m_width,height:m_height});
-		schedule_resize_notification();
-	}
-	
-	var m_resize_notification_scheduled=false;
-	function schedule_resize_notification() {
-		if (m_resize_notification_scheduled) return;
-		m_resize_notification_scheduled=true;
-		setTimeout(do_resize_notification,200);
-		function do_resize_notification() {
-			m_resize_notification_scheduled=false;
-			m_div.trigger('on-resized');
-		}
 	}
 	
 	function update_node_styles() {

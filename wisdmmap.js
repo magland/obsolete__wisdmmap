@@ -4,13 +4,13 @@ require('wisdmmapwidget.js');
 document.onWisdm=function() {
 	initializeWisdmBanner({content:$('#content')});
 	do_initialize();
-	initializeWisdmSession({user:'',node:'central',login:true,manual:true},function(tmp) {
+	/*initializeWisdmSession({user:'',node:'central',login:true,manual:true},function(tmp) {
 		if (tmp.success) {
 		}
 		else {
 			jAlert(tmp.error);
 		}
-	});
+	});*/
 };
 
 function do_initialize() {

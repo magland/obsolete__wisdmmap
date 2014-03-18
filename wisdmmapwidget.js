@@ -22,6 +22,7 @@ function WisdmMapWidget() {
 	var m_width=0;
 	var m_height=0;
 	var m_editor_expand_level=1; //0,1,2,3
+	var m_output_visible=false;
 	var m_div=templateHtml('.wisdmmapwidget');
 	var m_mapjs_widget=new MapJSWidget();
 	var m_output_window=new OutputWindow();
@@ -33,7 +34,6 @@ function WisdmMapWidget() {
 	var m_status_widget=new StatusWidget();
 	var m_last_clean_hash='';
 	var m_temporary_cloud_file_name='';
-	var m_view_mode='map';
 	m_div.find('.map_holder').append(m_mapjs_widget.div());
 	m_div.find('.map_holder').append(m_output_window.div());
 	m_div.find('.editor_holder').append(m_editor.div());
@@ -68,7 +68,7 @@ function WisdmMapWidget() {
 	m_file_toolbar.addAction('upload_map',{title:'Upload map',callback:on_upload_map,image_url:img_path+'/drive-upload.png',image_size:[16,16]});
 	m_file_toolbar.addAction('download_map',{title:'Download map',callback:on_download_map,image_url:img_path+'/drive-download.png',image_size:[16,16]});	
 	//uses jquery.hotkeys
-	$(document).bind('keydown','ctrl+s', function(e) {e.preventDefault(); on_save_map_local(); return false;});
+	$(document).bind('keydown','ctrl+s', function(e) {e.preventDefault(); on_save_map_default(); return false;});
 	
 	m_node_toolbar.setOrientation('vertical');
 	m_node_toolbar.addAction('cut_node',{title:'Cut node (Ctrl+X)',callback:on_cut_node,image_url:img_path+'/scissors.png',image_size:[16,16]});
@@ -86,8 +86,8 @@ function WisdmMapWidget() {
 	
 	m_view_toolbar.setOrientation('vertical');
 	m_view_toolbar.addAction('toggle_editor_view',{title:'Toggle editor view',callback:on_toggle_editor_view,image_url:img_path+'/document-code.png',image_size:[16,16]});
-	m_view_toolbar.addAction('view_map',{title:'View map',callback:on_view_map,image_url:img_path+'/sitemap.png',image_size:[16,16]});
-	m_view_toolbar.addAction('view_output',{title:'View output',callback:on_view_output,image_url:img_path+'/blue-document-text.png',image_size:[16,16]});	
+	//m_view_toolbar.addAction('view_map',{title:'View map',callback:on_view_map,image_url:img_path+'/sitemap.png',image_size:[16,16]});
+	m_view_toolbar.addAction('toggle_output_view',{title:'Toggle output view',callback:on_toggle_output_view,image_url:img_path+'/blue-document-text.png',image_size:[16,16]});	
 	
 	m_edit_toolbar.setOrientation('vertical');
 	m_edit_toolbar.addAction('search',{title:'Search for text',callback:on_search,image_url:img_path+'/document-search-result.png',image_size:[16,16]});
@@ -126,11 +126,15 @@ function WisdmMapWidget() {
 		
 		m_editor.setExpandButtonVisible(m_editor_expand_level<3);
 		
+		var map_height=m_height;
+		if (m_output_visible) map_height=Math.floor(map_height/2);
+		var output_height=m_height-map_height-10;
+		
 		m_div.css({position:'absolute',width:m_width,height:m_height});
-		m_mapjs_widget.setSize(map_width,m_height);
+		m_mapjs_widget.setSize(map_width,map_height);
 		m_mapjs_widget.div().css({left:toolbar_width+5,top:0});
-		m_output_window.setSize(map_width,m_height);
-		m_output_window.div().css({left:toolbar_width+5,top:0});
+		m_output_window.setSize(map_width,output_height);
+		m_output_window.div().css({left:toolbar_width+5,top:map_height+10});
 		m_editor.setSize(editor_width,m_height);
 		m_editor.div().css({left:toolbar_width+5+map_width+spacing,top:0});
 		m_status_widget.setSize(map_width||editor_width,12);
@@ -173,11 +177,11 @@ function WisdmMapWidget() {
 			m_mapjs_widget.setInputEnabled(false);
 		}
 		
-		console.log(m_view_mode);
 		m_mapjs_widget.div().hide();
 		m_output_window.div().hide();
-		if (m_view_mode=='map') m_mapjs_widget.div().show();
-		else if (m_view_mode=='output') m_output_window.div().show();
+		
+		m_mapjs_widget.div().show();
+		if (m_output_visible) m_output_window.div().show();
 	}
 	
 	function on_editor_save() {
@@ -215,6 +219,10 @@ function WisdmMapWidget() {
 			url+='#';
 			location.href=url;
 		});
+	}
+	function on_save_map_default() {
+		if (Wisdm.queryParameter('tc')) on_save_map_cloud();
+		else on_save_map_local();
 	}
 	function on_save_map_cloud() {
 		var map=m_mapjs_widget.getMap();
@@ -563,10 +571,25 @@ function WisdmMapWidget() {
 		return data.title||'untitled';
 	}
 	function on_download_map() {
+		var tc=Wisdm.queryParameter('tc');
+		console.log(tc);
 		var map_name=get_map_name();
-		var map=m_mapjs_widget.getMap();
-		var txt=JSON.stringify(map);
-		download_text_file(map_name+'.wmap',txt);
+		if (tc) {
+			if (that.hasBeenModified()) {
+				jAlert('You must save this version to the temporary cloud before downloading.');
+				return;
+			}
+			var url='http://'+location.hostname+'/wisdmserver?service=temporarycloud&command=downloadFile&contentType=application/json&key='+tc;
+			var pom=document.createElement('a');
+			pom.setAttribute('href',url);
+			pom.setAttribute('download',map_name+'.wmap');
+			pom.click();
+		}
+		else {
+			var map=m_mapjs_widget.getMap();
+			var txt=JSON.stringify(map);
+			download_text_file(map_name+'.wmap',txt);
+		}
 	}
 	function download_text_file(filename,text) {
 		var max_inbrowser_download_size=1000*1000;
@@ -844,24 +867,13 @@ function WisdmMapWidget() {
 		}
 		update_layout();
 	}
-	function on_view_map() {
-		set_view_mode('map');
-	}
-	function on_view_output() {
-		set_view_mode('output');
-	}
-	function set_view_mode(mode) {
-		m_view_mode='';
+	function on_toggle_output_view() {
+		m_output_visible=!m_output_visible;
 		update_layout();
-		setTimeout(function() {
-			m_view_mode=mode;
-			update_layout();
-		},100);
 	}
 	
 	function go_to_node(node_id) {
 		console.log('go_to_node: '+node_id);
-		set_view_mode('map');
 		m_mapjs_widget.setSelectedNode(node_id);
 	}
 	
@@ -869,7 +881,7 @@ function WisdmMapWidget() {
 		jPrompt('Search map for text:','','Search for text',function(str) {
 			if (!str) return;
 			var map=m_mapjs_widget.getMap(null,{include_node_ids:true});
-			set_view_mode('output');
+			if (!m_output_visible) on_toggle_output_view();
 			m_output_window.clearContent();
 			m_output_window.appendContent($('<p>Searching for text: "'+f22(str)+'" ...</p>'));
 			set_status('Searching...');
@@ -985,7 +997,7 @@ function WisdmMapWidget() {
 		}
 
 		var data0=m_mapjs_widget.getNodeData(m_mapjs_widget.getRootNodeId());
-		if (data0) document.title=data0.title;
+		if ((data0)&&(data0.title)) document.title=data0.title;
 		
 		if (!m_update_default_status_scheduled) {
 			m_update_default_status_scheduled=true;
